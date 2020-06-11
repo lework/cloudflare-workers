@@ -1,8 +1,8 @@
 'use strict'
 
-const hub_host = 'gcr.io'
-const auth_url = 'https://gcr.io'
-
+const hub_host = 'registry-1.docker.io'
+const auth_url = 'https://auth.docker.io'
+const workers_url = 'https://docker.lework.workers.dev'
 /**
  * static files (404.html, sw.js, conf.js)
  */
@@ -54,8 +54,25 @@ async function fetchHandler(e) {
   const getReqHeader = (key) => e.request.headers.get(key);
 
   let url = new URL(e.request.url);
-  url.hostname = hub_host;
 
+  if (url.pathname === '/token') {
+      let token_parameter = {
+        headers: {
+        'Host': 'auth.docker.io',
+        'User-Agent': getReqHeader("User-Agent"),
+        'Accept': getReqHeader("Accept"),
+        'Accept-Language': getReqHeader("Accept-Language"),
+        'Accept-Encoding': getReqHeader("Accept-Encoding"),
+        'Connection': 'keep-alive',
+        'Cache-Control': 'max-age=0'
+        }
+      };
+      let token_url = auth_url + url.pathname + url.search
+      return fetch(new Request(token_url, e.request), token_parameter)
+  }
+
+  url.hostname = hub_host;
+  
   let parameter = {
     headers: {
       'Host': hub_host,
@@ -83,7 +100,7 @@ async function fetchHandler(e) {
   if (new_response_headers.get("Www-Authenticate")) {
     let auth = new_response_headers.get("Www-Authenticate");
     let re = new RegExp(auth_url, 'g');
-    new_response_headers.set("Www-Authenticate", response_headers.get("Www-Authenticate").replace(re, $custom_domain));
+    new_response_headers.set("Www-Authenticate", response_headers.get("Www-Authenticate").replace(re, workers_url));
   }
 
   if (new_response_headers.get("Location")) {
