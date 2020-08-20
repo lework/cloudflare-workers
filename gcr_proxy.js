@@ -14,6 +14,7 @@ const PREFLIGHT_INIT = {
     headers: new Headers({
         'access-control-allow-origin': '*',
         'access-control-allow-methods': 'GET,POST,PUT,PATCH,TRACE,DELETE,HEAD,OPTIONS',
+        'Access-Control-Allow-Headers': "Authorization,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type",
         'access-control-max-age': '1728000',
     }),
 }
@@ -52,6 +53,11 @@ addEventListener('fetch', e => {
  * @param {FetchEvent} e
  */
 async function fetchHandler(e) {
+  if (e.request.method === 'OPTIONS' )
+  {
+    return new Response(null, PREFLIGHT_INIT)
+  }
+
   const getReqHeader = (key) => e.request.headers.get(key);
 
   let url = new URL(e.request.url);
@@ -66,8 +72,7 @@ async function fetchHandler(e) {
       'Accept-Encoding': getReqHeader("Accept-Encoding"),
       'Connection': 'keep-alive',
       'Cache-Control': 'max-age=0'
-    },
-    cacheTtl: 3600
+    }
   };
 
   if (e.request.headers.has("Authorization")) {
@@ -90,6 +95,10 @@ async function fetchHandler(e) {
   if (new_response_headers.get("Location")) {
     return httpHandler(e.request, new_response_headers.get("Location"))
   }
+
+  new_response_headers.set('Access-Control-Allow-Origin', '*')
+  new_response_headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,TRACE,DELETE,HEAD,OPTIONS')
+  new_response_headers.set('Access-Control-Allow-Headers', "Authorization,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type")
 
   let response = new Response(original_text, {
             status,
@@ -117,7 +126,9 @@ function httpHandler(req, pathname) {
     let rawLen = ''
 
     const reqHdrNew = new Headers(reqHdrRaw)
-
+    
+    // 访问storage.googleapis.com时去除认证
+    reqHdrNew.delete('Authorization')
     const refer = reqHdrNew.get('referer')
 
     let urlStr = pathname
@@ -160,7 +171,6 @@ async function proxy(urlObj, reqInit, rawLen) {
     const status = res.status
     resHdrNew.set('access-control-expose-headers', '*')
     resHdrNew.set('access-control-allow-origin', '*')
-    resHdrNew.set('Cache-Control', 'max-age=1500')
     
     resHdrNew.delete('content-security-policy')
     resHdrNew.delete('content-security-policy-report-only')
