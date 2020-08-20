@@ -2,6 +2,7 @@
 
 const hub_host = 'gcr.io'
 const auth_url = 'https://gcr.io'
+const workers_url = 'https://gcr.lework.workers.dev'
 
 /**
  * static files (404.html, sw.js, conf.js)
@@ -83,7 +84,7 @@ async function fetchHandler(e) {
   if (new_response_headers.get("Www-Authenticate")) {
     let auth = new_response_headers.get("Www-Authenticate");
     let re = new RegExp(auth_url, 'g');
-    new_response_headers.set("Www-Authenticate", response_headers.get("Www-Authenticate").replace(re, $custom_domain));
+    new_response_headers.set("Www-Authenticate", response_headers.get("Www-Authenticate").replace(re, workers_url));
   }
 
   if (new_response_headers.get("Location")) {
